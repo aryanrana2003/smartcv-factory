@@ -29,6 +29,17 @@ export interface Resume {
   template: string;
 }
 
+// Define a type for the API response to handle date conversion
+interface ResumeApiResponse {
+  id: string;
+  name: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  sections: ResumeSection[];
+  template: string;
+  [key: string]: any; // Allow additional properties
+}
+
 // Resume templates
 export const getResumeTemplates = (): ResumeTemplate[] => {
   return [
@@ -117,6 +128,12 @@ export const createEmptyResume = (name: string = 'Untitled Resume'): Resume => {
   };
 };
 
+// Interface for the suggestion response
+interface SuggestionResponse {
+  suggestion: string;
+  [key: string]: any; // Allow additional properties
+}
+
 // Generate AI suggestions for resume content
 export const generateSuggestion = async (sectionType: string, context: string): Promise<string> => {
   console.log(`Generating suggestion for ${sectionType} with context: ${context}`);
@@ -127,7 +144,7 @@ export const generateSuggestion = async (sectionType: string, context: string): 
       const result = await api.resumeBuilder.generateSuggestion(sectionType, { context });
       // Properly type check and handle the response
       if (result && typeof result === 'object' && 'suggestion' in result) {
-        return result.suggestion as string;
+        return (result as SuggestionResponse).suggestion;
       }
       throw new Error("Invalid suggestion response format");
     }
@@ -166,11 +183,17 @@ export const saveResume = async (resume: Resume): Promise<Resume> => {
         throw new Error("Invalid resume data received from server");
       }
 
+      // Cast to known type for safer access
+      const apiResponse = result as ResumeApiResponse;
+
       // Ensure date objects are properly converted
       const savedResume: Resume = {
-        ...result,
-        createdAt: result.createdAt instanceof Date ? result.createdAt : new Date(result.createdAt),
-        updatedAt: result.updatedAt instanceof Date ? result.updatedAt : new Date(result.updatedAt),
+        id: apiResponse.id,
+        name: apiResponse.name,
+        createdAt: apiResponse.createdAt instanceof Date ? apiResponse.createdAt : new Date(apiResponse.createdAt),
+        updatedAt: apiResponse.updatedAt instanceof Date ? apiResponse.updatedAt : new Date(apiResponse.updatedAt),
+        sections: apiResponse.sections,
+        template: apiResponse.template
       };
       
       return savedResume;

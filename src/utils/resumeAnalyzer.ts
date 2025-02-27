@@ -18,6 +18,21 @@ export interface ResumeAnalysisResult {
   };
 }
 
+// Type guard to check if a response matches the ResumeAnalysisResult structure
+function isValidAnalysisResult(obj: any): obj is ResumeAnalysisResult {
+  return obj &&
+    typeof obj === 'object' &&
+    typeof obj.score === 'number' &&
+    Array.isArray(obj.strengths) &&
+    Array.isArray(obj.weaknesses) &&
+    Array.isArray(obj.suggestions) &&
+    obj.keywordMatch &&
+    typeof obj.keywordMatch === 'object' &&
+    Array.isArray(obj.keywordMatch.found) &&
+    Array.isArray(obj.keywordMatch.missing) &&
+    typeof obj.keywordMatch.score === 'number';
+}
+
 /**
  * Analyzes a resume text against a job description
  * In production, this calls the actual API endpoint
@@ -28,7 +43,14 @@ export const analyzeResume = async (resumeText: string, jobDescription?: string)
   try {
     // In production, use the API
     if (import.meta.env.PROD) {
-      return await api.resumeAnalyzer.analyzeResume(resumeText, jobDescription);
+      const result = await api.resumeAnalyzer.analyzeResume(resumeText, jobDescription);
+      
+      // Validate the response structure
+      if (!isValidAnalysisResult(result)) {
+        throw new Error("Invalid analysis result format received from server");
+      }
+      
+      return result;
     }
     
     // In development, use a mock implementation for faster testing
@@ -97,6 +119,12 @@ export const analyzeResume = async (resumeText: string, jobDescription?: string)
   }
 };
 
+// Type for the text extraction API response
+interface TextExtractionResponse {
+  text: string;
+  [key: string]: any; // Allow additional properties
+}
+
 /**
  * Extract text from resume file (PDF, DOCX)
  */
@@ -104,7 +132,13 @@ export const extractResumeText = async (file: File): Promise<string> => {
   try {
     if (import.meta.env.PROD) {
       const result = await api.resumeAnalyzer.extractResumeText(file);
-      return result.text;
+      
+      // Ensure result has the expected format
+      if (!result || typeof result !== 'object' || typeof result.text !== 'string') {
+        throw new Error("Invalid text extraction response from server");
+      }
+      
+      return (result as TextExtractionResponse).text;
     }
     
     // Mock implementation for development
