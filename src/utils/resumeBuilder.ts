@@ -125,7 +125,11 @@ export const generateSuggestion = async (sectionType: string, context: string): 
     // In production environment, use the API
     if (import.meta.env.PROD) {
       const result = await api.resumeBuilder.generateSuggestion(sectionType, { context });
-      return result.suggestion;
+      // Properly type check and handle the response
+      if (result && typeof result === 'object' && 'suggestion' in result) {
+        return result.suggestion as string;
+      }
+      throw new Error("Invalid suggestion response format");
     }
     
     // Mock implementation for development
@@ -156,14 +160,27 @@ export const generateSuggestion = async (sectionType: string, context: string): 
 export const saveResume = async (resume: Resume): Promise<Resume> => {
   try {
     if (import.meta.env.PROD) {
-      return await api.resumeBuilder.saveResume(resume);
+      const result = await api.resumeBuilder.saveResume(resume);
+      // Ensure the result conforms to the Resume type
+      if (!result || typeof result !== 'object') {
+        throw new Error("Invalid resume data received from server");
+      }
+
+      // Ensure date objects are properly converted
+      const savedResume: Resume = {
+        ...result,
+        createdAt: result.createdAt instanceof Date ? result.createdAt : new Date(result.createdAt),
+        updatedAt: result.updatedAt instanceof Date ? result.updatedAt : new Date(result.updatedAt),
+      };
+      
+      return savedResume;
     }
     
     // Mock implementation
     await new Promise(resolve => setTimeout(resolve, 800));
     
     // Update the timestamps
-    const updatedResume = {
+    const updatedResume: Resume = {
       ...resume,
       updatedAt: new Date()
     };

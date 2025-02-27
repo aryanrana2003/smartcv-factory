@@ -33,13 +33,15 @@ const ResumeForm = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   
-  // Initialize the form
+  // Initialize the form with all needed fields
   const form = useForm({
     defaultValues: {
       fullName: '',
       email: '',
       phone: '',
       location: '',
+      linkedIn: '',  // Added missing field
+      website: '',   // Added missing field
       summary: '',
       // Additional fields would be added here
     },
