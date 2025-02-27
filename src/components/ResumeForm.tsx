@@ -1,6 +1,12 @@
 
 import { useState } from 'react';
-import { createEmptyResume, Resume, generateSuggestion, exportResumeToPdf } from '@/utils/resumeBuilder';
+import { 
+  createEmptyResume, 
+  Resume, 
+  generateSuggestion, 
+  exportResumeToPdf,
+  saveResume 
+} from '@/utils/resumeBuilder';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -42,9 +48,14 @@ const ResumeForm = () => {
   const handleGenerateSuggestion = async (sectionType: string) => {
     setIsGenerating(true);
     try {
-      // In a real app, we would pass context like existing content or a job description
-      const suggestion = await generateSuggestion(sectionType, "");
+      // Get context from the form fields that relate to this section
+      const formValues = form.getValues();
+      const context = JSON.stringify(formValues);
       
+      // Generate the suggestion
+      const suggestion = await generateSuggestion(sectionType, context);
+      
+      // Update the appropriate form field with the suggestion
       if (sectionType === 'summary') {
         form.setValue('summary', suggestion);
       }
@@ -62,29 +73,67 @@ const ResumeForm = () => {
     }
   };
   
-  const handleSaveResume = (data: any) => {
+  const handleSaveResume = async (data: any) => {
     setIsSaving(true);
     
-    // Update resume with form data
-    console.log("Form data to save:", data);
-    
-    // In a real app, this would update the resume state and possibly save to a backend
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      // Update resume with form data
+      const updatedResume: Resume = {
+        ...resume,
+        sections: resume.sections.map(section => {
+          if (section.type === 'personal') {
+            return {
+              ...section,
+              content: {
+                fullName: data.fullName || '',
+                email: data.email || '',
+                phone: data.phone || '',
+                location: data.location || '',
+                linkedIn: data.linkedIn || '',
+                website: data.website || ''
+              }
+            };
+          }
+          if (section.type === 'summary') {
+            return {
+              ...section,
+              content: {
+                text: data.summary || ''
+              }
+            };
+          }
+          return section;
+        }),
+        updatedAt: new Date()
+      };
+      
+      // Save the resume (in a real app, this would call an API)
+      const savedResume = await saveResume(updatedResume);
+      setResume(savedResume);
+      
       toast.success("Resume saved successfully!", {
         description: "Your changes have been saved to your account."
       });
-    }, 800);
+    } catch (error) {
+      console.error("Error saving resume:", error);
+      toast.error("Failed to save resume. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
   
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
     setIsExporting(true);
     
-    // In a real app, this would generate and download a PDF
-    setTimeout(() => {
-      exportResumeToPdf(resume);
+    try {
+      await exportResumeToPdf(resume);
+      toast.success("Resume exported successfully!");
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast.error("Failed to export resume to PDF. Please try again.");
+    } finally {
       setIsExporting(false);
-    }, 1000);
+    }
   };
   
   const handleSelectTemplate = (templateId: string) => {
@@ -100,9 +149,29 @@ const ResumeForm = () => {
   
   const handleAddExperience = () => {
     // Add a new empty experience entry
-    toast.info("New experience section added", {
-      description: "Fill in the details of your work experience."
-    });
+    const updatedResume = { ...resume };
+    const experienceSection = updatedResume.sections.find(s => s.type === 'experience');
+    
+    if (experienceSection) {
+      experienceSection.content.positions = [
+        ...(experienceSection.content.positions || []),
+        {
+          id: crypto.randomUUID(),
+          title: '',
+          company: '',
+          location: '',
+          startDate: '',
+          endDate: '',
+          current: false,
+          description: ''
+        }
+      ];
+      
+      setResume(updatedResume);
+      toast.info("New experience section added", {
+        description: "Fill in the details of your work experience."
+      });
+    }
   };
   
   return (
@@ -216,6 +285,32 @@ const ResumeForm = () => {
                               <FormLabel>Location</FormLabel>
                               <FormControl>
                                 <Input placeholder="New York, NY" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="linkedIn"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>LinkedIn</FormLabel>
+                              <FormControl>
+                                <Input placeholder="linkedin.com/in/johndoe" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="website"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Website</FormLabel>
+                              <FormControl>
+                                <Input placeholder="johndoe.com" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>

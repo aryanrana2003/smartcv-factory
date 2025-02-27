@@ -7,7 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { analyzeResume, getScoreColor, getScoreDescription } from '@/utils/resumeAnalyzer';
+import { 
+  analyzeResume, 
+  getScoreColor, 
+  getScoreDescription, 
+  extractResumeText,
+  ResumeAnalysisResult 
+} from '@/utils/resumeAnalyzer';
 import { Sparkles, Upload, CheckCircle, XCircle, History, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -16,20 +22,21 @@ interface AnalysisHistoryEntry {
   date: Date;
   resumeText: string;
   jobDescription: string;
-  result: any;
+  result: ResumeAnalysisResult;
 }
 
 const ResumeAnalysis = () => {
   const [resumeText, setResumeText] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<ResumeAnalysisResult | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<AnalysisHistoryEntry[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
-  const [comparisonResult, setComparisonResult] = useState<any>(null);
+  const [comparisonResult, setComparisonResult] = useState<ResumeAnalysisResult | null>(null);
   
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     
@@ -41,19 +48,28 @@ const ResumeAnalysis = () => {
       return;
     }
     
-    // In a real app, we would extract text from the document
-    // For now, we'll simulate it
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size exceeds 5MB limit.');
+      return;
+    }
     
+    setIsProcessingFile(true);
     toast.success(`File "${file.name}" uploaded. Processing...`);
     
-    // Simulate text extraction delay
-    setTimeout(() => {
-      setResumeText("Professional Summary\n\nExperienced software engineer with 5+ years developing web applications using JavaScript, React, and Node.js. Strong problem-solving skills with a focus on creating efficient, scalable solutions.\n\nWork Experience\n\nSenior Developer - ABC Tech (2020-Present)\n• Led development of company's flagship product, improving performance by 40%\n• Mentored junior developers and implemented code review practices\n\nWeb Developer - XYZ Solutions (2018-2020)\n• Built responsive web applications for clients in finance and healthcare\n• Reduced page load time by 60% through optimization techniques\n\nEducation\n\nBachelor of Science in Computer Science - University of Technology (2018)\n\nSkills\n\nJavaScript, React, Node.js, TypeScript, HTML/CSS, Git, RESTful APIs, MongoDB");
+    try {
+      const extractedText = await extractResumeText(file);
+      setResumeText(extractedText);
       toast.success("Resume processed successfully!");
-    }, 1500);
+    } catch (error) {
+      console.error("File processing error:", error);
+      toast.error("Failed to process file. Please try again or paste text manually.");
+    } finally {
+      setIsProcessingFile(false);
+    }
   };
   
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     if (!resumeText.trim()) {
       toast.error("Please enter your resume text or upload a file.");
       return;
@@ -61,31 +77,28 @@ const ResumeAnalysis = () => {
     
     setIsAnalyzing(true);
     
-    // Simulate API call delay
-    setTimeout(() => {
-      try {
-        const result = analyzeResume(resumeText, jobDescription);
-        setAnalysisResult(result);
-        
-        // Add to history
-        const historyEntry: AnalysisHistoryEntry = {
-          id: crypto.randomUUID(),
-          date: new Date(),
-          resumeText,
-          jobDescription,
-          result
-        };
-        
-        setAnalysisHistory(prev => [historyEntry, ...prev]);
-        
-        toast.success("Analysis completed successfully!");
-      } catch (error) {
-        console.error("Analysis error:", error);
-        toast.error("Failed to analyze resume. Please try again.");
-      } finally {
-        setIsAnalyzing(false);
-      }
-    }, 2000);
+    try {
+      const result = await analyzeResume(resumeText, jobDescription);
+      setAnalysisResult(result);
+      
+      // Add to history
+      const historyEntry: AnalysisHistoryEntry = {
+        id: crypto.randomUUID(),
+        date: new Date(),
+        resumeText,
+        jobDescription,
+        result
+      };
+      
+      setAnalysisHistory(prev => [historyEntry, ...prev]);
+      
+      toast.success("Analysis completed successfully!");
+    } catch (error) {
+      console.error("Analysis error:", error);
+      toast.error("Failed to analyze resume. Please try again.");
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
   
   const handleCompare = (historyEntry: AnalysisHistoryEntry) => {
@@ -132,6 +145,7 @@ const ResumeAnalysis = () => {
                     className="hidden" 
                     accept=".pdf,.doc,.docx" 
                     onChange={handleFileUpload}
+                    disabled={isProcessingFile}
                   />
                 </label>
                 
@@ -140,6 +154,7 @@ const ResumeAnalysis = () => {
                   className="min-h-[200px]" 
                   value={resumeText}
                   onChange={(e) => setResumeText(e.target.value)}
+                  disabled={isProcessingFile}
                 />
               </div>
             </CardContent>
@@ -156,6 +171,7 @@ const ResumeAnalysis = () => {
                 className="min-h-[120px]" 
                 value={jobDescription}
                 onChange={(e) => setJobDescription(e.target.value)}
+                disabled={isAnalyzing || isProcessingFile}
               />
             </CardContent>
           </Card>
@@ -164,7 +180,7 @@ const ResumeAnalysis = () => {
             className="w-full" 
             size="lg" 
             onClick={handleAnalyze}
-            disabled={isAnalyzing || !resumeText.trim()}
+            disabled={isAnalyzing || isProcessingFile || !resumeText.trim()}
           >
             <Sparkles className="mr-2 h-4 w-4" />
             {isAnalyzing ? 'Analyzing...' : 'Analyze Resume'}
@@ -222,7 +238,7 @@ const ResumeAnalysis = () => {
           {analysisResult ? (
             <Card className="animate-fade-in">
               <CardContent className="p-6">
-                {compareMode && (
+                {compareMode && comparisonResult && (
                   <div className="mb-4 p-2 bg-secondary/50 rounded-lg">
                     <div className="flex justify-between items-center">
                       <p className="text-sm font-medium">Comparison Mode</p>
