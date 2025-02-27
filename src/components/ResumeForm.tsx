@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { createEmptyResume, Resume, generateSuggestion } from '@/utils/resumeBuilder';
+import { createEmptyResume, Resume, generateSuggestion, exportResumeToPdf } from '@/utils/resumeBuilder';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,12 +17,15 @@ import {
 } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { Sparkles, Plus, Trash2, Download, Save } from 'lucide-react';
+import { Sparkles, Plus, Trash2, Download, Save, FileText } from 'lucide-react';
+import ResumeTemplateSelector from './ResumeTemplateSelector';
 
 const ResumeForm = () => {
   const [resume, setResume] = useState<Resume>(createEmptyResume());
   const [activeSection, setActiveSection] = useState('personal');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   
   // Initialize the form
   const form = useForm({
@@ -46,27 +49,60 @@ const ResumeForm = () => {
         form.setValue('summary', suggestion);
       }
       
-      toast.success("AI suggestion generated!");
+      toast.success("AI suggestion generated!", {
+        description: "We've created content based on industry best practices."
+      });
     } catch (error) {
       console.error("Error generating suggestion:", error);
-      toast.error("Failed to generate suggestion. Please try again.");
+      toast.error("Failed to generate suggestion. Please try again.", {
+        description: "There was an issue connecting to our AI service."
+      });
     } finally {
       setIsGenerating(false);
     }
   };
   
   const handleSaveResume = (data: any) => {
+    setIsSaving(true);
+    
     // Update resume with form data
     console.log("Form data to save:", data);
     
     // In a real app, this would update the resume state and possibly save to a backend
+    setTimeout(() => {
+      setIsSaving(false);
+      toast.success("Resume saved successfully!", {
+        description: "Your changes have been saved to your account."
+      });
+    }, 800);
+  };
+  
+  const handleExportPdf = () => {
+    setIsExporting(true);
     
-    toast.success("Resume saved successfully!");
+    // In a real app, this would generate and download a PDF
+    setTimeout(() => {
+      exportResumeToPdf(resume);
+      setIsExporting(false);
+    }, 1000);
+  };
+  
+  const handleSelectTemplate = (templateId: string) => {
+    setResume(prev => ({
+      ...prev,
+      template: templateId
+    }));
+    
+    toast.success("Template updated!", {
+      description: "Your resume will now use the selected template."
+    });
   };
   
   const handleAddExperience = () => {
     // Add a new empty experience entry
-    toast.info("Experience section would be expanded here");
+    toast.info("New experience section added", {
+      description: "Fill in the details of your work experience."
+    });
   };
   
   return (
@@ -77,23 +113,23 @@ const ResumeForm = () => {
           <p className="text-muted-foreground">Complete each section with your information</p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={form.handleSubmit(handleSaveResume)} disabled={isSaving}>
             <Save className="mr-2 h-4 w-4" />
-            Save Draft
+            {isSaving ? 'Saving...' : 'Save Draft'}
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={handleExportPdf} disabled={isExporting}>
             <Download className="mr-2 h-4 w-4" />
-            Export PDF
+            {isExporting ? 'Exporting...' : 'Export PDF'}
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-6">
           <Card>
             <CardContent className="p-4">
               <nav className="space-y-1">
-                {['personal', 'summary', 'experience', 'education', 'skills'].map((section) => (
+                {['personal', 'summary', 'experience', 'education', 'skills', 'templates'].map((section) => (
                   <button
                     key={section}
                     onClick={() => setActiveSection(section)}
@@ -107,6 +143,19 @@ const ResumeForm = () => {
                   </button>
                 ))}
               </nav>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="aspect-[3/4] rounded-md border border-border overflow-hidden">
+                <div className="w-full h-full flex items-center justify-center bg-secondary">
+                  <div className="text-center p-4">
+                    <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Resume Preview</p>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -305,9 +354,20 @@ const ResumeForm = () => {
                     </div>
                   )}
                   
-                  <div className="flex justify-end pt-4">
-                    <Button type="submit">Save Changes</Button>
-                  </div>
+                  {activeSection === 'templates' && (
+                    <ResumeTemplateSelector 
+                      selectedTemplate={resume.template}
+                      onSelectTemplate={handleSelectTemplate}
+                    />
+                  )}
+                  
+                  {activeSection !== 'templates' && (
+                    <div className="flex justify-end pt-4">
+                      <Button type="submit" disabled={isSaving}>
+                        {isSaving ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                    </div>
+                  )}
                 </form>
               </Form>
             </CardContent>

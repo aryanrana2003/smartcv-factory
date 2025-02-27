@@ -8,14 +8,26 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { analyzeResume, getScoreColor, getScoreDescription } from '@/utils/resumeAnalyzer';
-import { Sparkles, Upload, CheckCircle, XCircle } from 'lucide-react';
+import { Sparkles, Upload, CheckCircle, XCircle, History, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
+
+interface AnalysisHistoryEntry {
+  id: string;
+  date: Date;
+  resumeText: string;
+  jobDescription: string;
+  result: any;
+}
 
 const ResumeAnalysis = () => {
   const [resumeText, setResumeText] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisHistory, setAnalysisHistory] = useState<AnalysisHistoryEntry[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [compareMode, setCompareMode] = useState(false);
+  const [comparisonResult, setComparisonResult] = useState<any>(null);
   
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -54,6 +66,18 @@ const ResumeAnalysis = () => {
       try {
         const result = analyzeResume(resumeText, jobDescription);
         setAnalysisResult(result);
+        
+        // Add to history
+        const historyEntry: AnalysisHistoryEntry = {
+          id: crypto.randomUUID(),
+          date: new Date(),
+          resumeText,
+          jobDescription,
+          result
+        };
+        
+        setAnalysisHistory(prev => [historyEntry, ...prev]);
+        
         toast.success("Analysis completed successfully!");
       } catch (error) {
         console.error("Analysis error:", error);
@@ -62,6 +86,22 @@ const ResumeAnalysis = () => {
         setIsAnalyzing(false);
       }
     }, 2000);
+  };
+  
+  const handleCompare = (historyEntry: AnalysisHistoryEntry) => {
+    if (!analysisResult) return;
+    
+    setCompareMode(true);
+    setComparisonResult(historyEntry.result);
+    
+    toast.info("Comparing current analysis with previous version", {
+      description: `Comparing with analysis from ${historyEntry.date.toLocaleDateString()}`
+    });
+  };
+  
+  const handleExitCompare = () => {
+    setCompareMode(false);
+    setComparisonResult(null);
   };
   
   return (
@@ -129,12 +169,88 @@ const ResumeAnalysis = () => {
             <Sparkles className="mr-2 h-4 w-4" />
             {isAnalyzing ? 'Analyzing...' : 'Analyze Resume'}
           </Button>
+          
+          {analysisHistory.length > 0 && (
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={() => setShowHistory(!showHistory)}
+            >
+              <History className="mr-2 h-4 w-4" />
+              {showHistory ? 'Hide Analysis History' : 'Show Analysis History'}
+            </Button>
+          )}
+          
+          {showHistory && analysisHistory.length > 0 && (
+            <Card>
+              <CardContent className="p-4">
+                <h3 className="text-sm font-medium mb-3">Analysis History</h3>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {analysisHistory.map((entry) => (
+                    <div 
+                      key={entry.id} 
+                      className="flex items-center justify-between p-2 hover:bg-secondary rounded-md"
+                    >
+                      <div>
+                        <p className="text-sm font-medium">
+                          {entry.date.toLocaleDateString()} at {entry.date.toLocaleTimeString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Score: <span className={getScoreColor(entry.result.score)}>
+                            {entry.result.score}
+                          </span>
+                        </p>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleCompare(entry)}
+                        disabled={!analysisResult}
+                      >
+                        Compare
+                        <ChevronRight className="ml-1 h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
         
         <div className="lg:col-span-2">
           {analysisResult ? (
             <Card className="animate-fade-in">
               <CardContent className="p-6">
+                {compareMode && (
+                  <div className="mb-4 p-2 bg-secondary/50 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm font-medium">Comparison Mode</p>
+                      <Button variant="ghost" size="sm" onClick={handleExitCompare}>
+                        Exit Comparison
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mt-2">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Current Analysis</p>
+                        <p className="text-sm font-medium">
+                          Score: <span className={getScoreColor(analysisResult.score)}>
+                            {analysisResult.score}
+                          </span>
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Previous Analysis</p>
+                        <p className="text-sm font-medium">
+                          Score: <span className={getScoreColor(comparisonResult.score)}>
+                            {comparisonResult.score}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="mb-6">
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="text-lg font-medium">Resume Score</h3>
