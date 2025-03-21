@@ -1,69 +1,70 @@
-# Welcome to your Lovable project
+# AI-driven Resume Builder and Analyzer
 
-## Project info
+## 📌 Overview
+AI-driven Resume Builder and Analyzer is a full-stack web application that leverages AI to help users create optimized resumes efficiently. It provides automated analysis, experience summarization, and real-time suggestions to improve resume quality.
 
-**URL**: https://lovable.dev/projects/c6cbc681-1c0f-4b27-87b0-eaa431f0ceb3
+## 🚀 Features
+- **AI-powered Resume Creation** – Generates well-structured resumes with optimized content.
+- **Experience Summarization** – Uses **Gemini API** to craft concise and impactful job descriptions.
+- **Real-time Resume Analysis** – Offers AI-driven insights to enhance resume effectiveness.
+- **User-friendly Interface** – Built with **React.js** for a seamless user experience.
 
-## How can I edit this code?
+## 🛠️ Tech Stack
+- **Frontend:** React.js, Tailwind CSS
+- **Backend:** (Specify if applicable, e.g., Node.js/Express, Django, Flask)
+- **AI Integration:** Gemini API
+- **Database:** (Specify if applicable, e.g., MongoDB, MySQL, Firebase)
+- **Hosting:** (Specify if applicable, e.g., Vercel, Firebase, AWS)
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/c6cbc681-1c0f-4b27-87b0-eaa431f0ceb3) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+## 📂 Project Structure
+```bash
+📦 AI-driven Resume Builder and Analyzer
+├── 📂 client (React.js Frontend)
+├── 📂 server (Backend - if applicable)
+├── 📂 assets (Images, icons, etc.)
+└── README.md (Project documentation)
 ```
 
-**Edit a file directly in GitHub**
+## 🚀 Getting Started
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/aryanrana2003/ai-driven-resume-builder.git
+cd ai-driven-resume-builder
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### 2️⃣ Install Dependencies
+#### Frontend
+```bash
+cd client
+npm install
+npm start
+```
+#### Backend (If applicable)
+```bash
+cd server
+npm install
+npm start
+```
 
-**Use GitHub Codespaces**
+### 3️⃣ Run the Application
+Visit `http://localhost:3000` to access the app.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 📷 Screenshots
+(Include relevant screenshots showcasing the application UI)
 
-## What technologies are used for this project?
+## 📌 Future Enhancements
+- Add **custom resume templates** for diverse user preferences.
+- Improve AI-driven suggestions with **enhanced NLP models**.
+- Implement **export to PDF** functionality with customization options.
 
-This project is built with .
+## 🤝 Contributing
+Contributions are welcome! Feel free to open an issue or submit a pull request.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 📜 License
+This project is licensed under the **MIT License**.
 
-## How can I deploy this project?
+## 📬 Contact
+For queries, reach out via [Email](mailto:ranaaryan2100@gmail.com).
 
-Simply open [Lovable](https://lovable.dev/projects/c6cbc681-1c0f-4b27-87b0-eaa431f0ceb3) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+---
+🚀 **Let's revolutionize resume building with AI!**
